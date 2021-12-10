@@ -1,9 +1,9 @@
 // Copyright 2021 Oxide Computer Company
 
-use diesel::pg::PgConnection;
-use diesel_dtrace::DTraceConnection;
 use async_bb8_diesel::{AsyncSimpleConnection, ConnectionManager};
 use bb8::Pool;
+use diesel::pg::PgConnection;
+use diesel_dtrace::DTraceConnection;
 
 #[tokio::main]
 async fn main() {
@@ -14,7 +14,10 @@ async fn main() {
         String::from("postgresql://localhost:5432")
     };
     let manager = ConnectionManager::<DTraceConnection<PgConnection>>::new(&url);
-    let pool = Pool::builder().build(manager).await.expect("Failed to build pool");
+    let pool = Pool::builder()
+        .build(manager)
+        .await
+        .expect("Failed to build pool");
     let conn = pool.get().await.expect("Failed to connect to DB");
     let _ = conn
         .batch_execute_async(concat!(

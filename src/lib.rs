@@ -53,51 +53,60 @@ use diesel::query_builder::{AsQuery, QueryFragment, QueryId};
 use diesel::r2d2::R2D2Connection;
 use std::ops::{Deref, DerefMut};
 use usdt::UniqueId;
+use uuid::Uuid;
 
 #[usdt::provider(provider = "diesel_db")]
 pub mod probes {
-    use usdt::UniqueId;
-    pub fn connection_establish_start(_: &UniqueId, url: &str) {}
-    pub fn connection_establish_end(_: &UniqueId, success: u8) {}
-    pub fn query_start(_: &UniqueId, query: &str) {}
-    pub fn query_end(_: &UniqueId) {}
-    pub fn transaction_start(_: &UniqueId) {}
-    pub fn transaction_end(_: &UniqueId) {}
+    pub fn connection_establish_start(_: &UniqueId, conn_id: Uuid, url: &str) {}
+    pub fn connection_establish_end(_: &UniqueId, conn_id: Uuid, success: u8) {}
+    pub fn query_start(_: &UniqueId, conn_id: Uuid, query: &str) {}
+    pub fn query_end(_: &UniqueId, conn_id: Uuid) {}
+    pub fn transaction_start(_: &UniqueId, conn_id: Uuid) {}
+    pub fn transaction_end(_: &UniqueId, conn_id: Uuid) {}
 }
 
 /// A [`Connection`] that includes DTrace probe points.
 ///
 /// The following probe points are defined:
 ///
-/// - `connection_establish_{start,end}`: Emitted when a connection is started and completed.
-/// - `query_{start,end}`: Emitted when a query is begun and completed.
-/// - `transaction_{start,end}`: Emitted when a transaction is begun and completed.
+/// ```ignore
+/// connection_establish_start(_: &UniqueId, conn_id: Uuid, url: &str)
+/// connection_establish_end(_: &UniqueId, conn_id: Uuid, success: u8)
+/// query_start(_: &UniqueId, conn_id: Uuid, query: &str)
+/// query_end(_: &UniqueId, conn_id: Uuid)
+/// transaction_start(_: &UniqueId, conn_id: Uuid)
+/// transaction_end(_: &UniqueId, conn_id: Uuid)
+/// ```
 ///
-/// Every probe includes a [`UniqueId`] as its first argument, which allows correlating each
-/// start/end probe in an application. Probe `connection_establish_start` includes the database URL
-/// as its second argument, and the `query_start` probe includes the actual SQL query as a string
-/// as its second argument.
-pub struct DTraceConnection<C: Connection>(C);
+/// The first argument is a [`UniqueId`], which enables correlating the start and end probes.
+/// `conn_id` is a unique identifier for the connection itself, which enables one to see which
+/// connections are executing each query. `query_start` also includes the actual SQL query string
+/// as its third argument.
+#[derive(Debug)]
+pub struct DTraceConnection<C: Connection> {
+    inner: C,
+    id: Uuid,
+}
 
 impl<C: Connection> Deref for DTraceConnection<C> {
     type Target = C;
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.inner
     }
 }
 
 impl<C: Connection> DerefMut for DTraceConnection<C> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        &mut self.inner
     }
 }
 
 impl<C: Connection> SimpleConnection for DTraceConnection<C> {
     fn batch_execute(&mut self, query: &str) -> QueryResult<()> {
         let id = UniqueId::new();
-        probes::query_start!(|| (id.clone(), query));
-        let result = self.0.batch_execute(query);
-        probes::query_end!(|| id);
+        probes::query_start!(|| (&id, self.id, query));
+        let result = self.inner.batch_execute(query);
+        probes::query_end!(|| (&id, self.id));
         result
     }
 }
@@ -117,17 +126,31 @@ where
 
     fn establish(database_url: &str) -> ConnectionResult<Self> {
         let id = UniqueId::new();
-        probes::connection_establish_start!(|| { (&id, database_url) });
+        let conn_id = Uuid::new_v4();
+        probes::connection_establish_start!(|| (&id, conn_id, database_url));
         let conn = C::establish(database_url);
-        probes::connection_establish_end!(|| (&id, u8::from(conn.is_ok())));
-        Ok(DTraceConnection(conn?))
+        probes::connection_establish_end!(|| (&id, conn_id, u8::from(conn.is_ok())));
+        let inner = conn?;
+        Ok(DTraceConnection { inner, id: conn_id })
+    }
+
+    fn transaction<T, E, F>(&mut self, f: F) -> Result<T, E>
+    where
+        F: FnOnce(&mut Self) -> Result<T, E>,
+        E: From<diesel::result::Error>,
+    {
+        let id = UniqueId::new();
+        probes::transaction_start!(|| (&id, self.id));
+        let result = f(self);
+        probes::transaction_end!(|| (&id, self.id));
+        result
     }
 
     fn execute(&mut self, query: &str) -> QueryResult<usize> {
         let id = UniqueId::new();
-        probes::query_start!(|| (&id, query));
-        let result = self.0.execute(query);
-        probes::query_end!(|| &id);
+        probes::query_start!(|| (&id, self.id, query));
+        let result = self.inner.execute(query);
+        probes::query_end!(|| (&id, self.id));
         result
     }
 
@@ -142,9 +165,13 @@ where
     {
         let query = source.as_query();
         let id = UniqueId::new();
-        probes::query_start!(|| { (&id, debug_query::<Self::Backend, _>(&query).to_string(),) });
-        let result = self.0.load(query);
-        probes::query_end!(|| &id);
+        probes::query_start!(|| (
+            &id,
+            self.id,
+            debug_query::<Self::Backend, _>(&query).to_string()
+        ));
+        let result = self.inner.load(query);
+        probes::query_end!(|| (&id, self.id));
         result
     }
 
@@ -153,16 +180,20 @@ where
         T: QueryFragment<Self::Backend> + QueryId,
     {
         let id = UniqueId::new();
-        probes::query_start!(|| { (&id, debug_query::<Self::Backend, _>(&source).to_string(),) });
-        let result = self.0.execute_returning_count(source);
-        probes::query_end!(|| &id);
+        probes::query_start!(|| (
+            &id,
+            self.id,
+            debug_query::<Self::Backend, _>(&source).to_string()
+        ));
+        let result = self.inner.execute_returning_count(source);
+        probes::query_end!(|| (&id, self.id));
         result
     }
 
     fn transaction_state(
         &mut self,
     ) -> &mut <C::TransactionManager as TransactionManager<C>>::TransactionStateData {
-        self.0.transaction_state()
+        self.inner.transaction_state()
     }
 }
 
@@ -172,6 +203,6 @@ where
     <C::Backend as Backend>::QueryBuilder: Default,
 {
     fn ping(&mut self) -> QueryResult<()> {
-        self.0.ping()
+        self.inner.ping()
     }
 }

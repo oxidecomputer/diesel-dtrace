@@ -1,7 +1,7 @@
 // Copyright 2021 Oxide Computer Company
 
-use diesel::{connection::SimpleConnection, Connection, pg::PgConnection, r2d2::ConnectionManager};
 use diesel::r2d2::Pool;
+use diesel::{connection::SimpleConnection, pg::PgConnection, r2d2::ConnectionManager, Connection};
 use diesel_dtrace::DTraceConnection;
 
 fn main() {
@@ -12,7 +12,9 @@ fn main() {
         String::from("postgresql://localhost:5432")
     };
     let manager = ConnectionManager::<DTraceConnection<PgConnection>>::new(&url);
-    let pool = Pool::builder().build(manager).expect("Failed to build pool");
+    let pool = Pool::builder()
+        .build(manager)
+        .expect("Failed to build pool");
     let mut conn = pool.get().expect("Failed to connect to DB");
     let _ = conn
         .execute("SELECT 1")
@@ -27,5 +29,4 @@ fn main() {
     foo::<DTraceConnection<PgConnection>>();
 }
 
-fn foo<T: Send>() {
-}
+fn foo<T: Send>() {}
