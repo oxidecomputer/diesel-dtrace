@@ -11,16 +11,16 @@
 //! be seen with:
 //!
 //! ```bash
-//! ## dtrace -Zqn 'diesel*::: { printf("%s (%d)\n", probename, arg0) }'
-//! connection_establish_start (4294967297)
-//! connection_establish_end (4294967297)
-//! query_start (4294967298)
-//! query_end (4294967298)
-//! query_start (4294967299)
-//! query_end (4294967299)
+//! ## dtrace -Zqn 'diesel-db*::: { printf("%s (%d)\n", probename, arg0) }'
+//! connection-establish-start (4294967297)
+//! connection-establish-done (4294967297)
+//! query-start (4294967298)
+//! query-done (4294967298)
+//! query-start (4294967299)
+//! query-done (4294967299)
 //! ```
 //!
-//! All probes emit a unique ID as their first argument, which allows correlating the start/end
+//! All probes emit a unique ID as their first argument, which allows correlating the start/done
 //! probes. This is crucial for timing the latency of queries, or predicating other DTrace actions
 //! on a connection being established or query executing (e.g., tracing all system calls while a
 //! query is running).
@@ -55,32 +55,32 @@ use std::ops::{Deref, DerefMut};
 use usdt::UniqueId;
 use uuid::Uuid;
 
-#[usdt::provider(provider = "diesel_db")]
+#[usdt::provider(provider = "diesel__db")]
 pub mod probes {
-    pub fn connection_establish_start(_: &UniqueId, conn_id: Uuid, url: &str) {}
-    pub fn connection_establish_end(_: &UniqueId, conn_id: Uuid, success: u8) {}
-    pub fn query_start(_: &UniqueId, conn_id: Uuid, query: &str) {}
-    pub fn query_end(_: &UniqueId, conn_id: Uuid) {}
-    pub fn transaction_start(_: &UniqueId, conn_id: Uuid) {}
-    pub fn transaction_end(_: &UniqueId, conn_id: Uuid) {}
+    pub fn connection__establish__start(_: &UniqueId, conn_id: Uuid, url: &str) {}
+    pub fn connection__establish__done(_: &UniqueId, conn_id: Uuid, success: u8) {}
+    pub fn query__start(_: &UniqueId, conn_id: Uuid, query: &str) {}
+    pub fn query__done(_: &UniqueId, conn_id: Uuid) {}
+    pub fn transaction__start(_: &UniqueId, conn_id: Uuid) {}
+    pub fn transaction__done(_: &UniqueId, conn_id: Uuid) {}
 }
 
 /// A [`Connection`] that includes DTrace probe points.
 ///
-/// The following probe points are defined:
+/// This crate generates a provider named `diesel-db`. The following probe points are defined:
 ///
 /// ```ignore
-/// connection_establish_start(_: &UniqueId, conn_id: Uuid, url: &str)
-/// connection_establish_end(_: &UniqueId, conn_id: Uuid, success: u8)
-/// query_start(_: &UniqueId, conn_id: Uuid, query: &str)
-/// query_end(_: &UniqueId, conn_id: Uuid)
-/// transaction_start(_: &UniqueId, conn_id: Uuid)
-/// transaction_end(_: &UniqueId, conn_id: Uuid)
+/// connection-establish-start(_: &UniqueId, conn_id: Uuid, url: &str)
+/// connection-establish-done(_: &UniqueId, conn_id: Uuid, success: u8)
+/// query-start(_: &UniqueId, conn_id: Uuid, query: &str)
+/// query-done(_: &UniqueId, conn_id: Uuid)
+/// transaction-start(_: &UniqueId, conn_id: Uuid)
+/// transaction-done(_: &UniqueId, conn_id: Uuid)
 /// ```
 ///
-/// The first argument is a [`UniqueId`], which enables correlating the start and end probes.
+/// The first argument is a [`UniqueId`], which enables correlating the start and done probes.
 /// `conn_id` is a unique identifier for the connection itself, which enables one to see which
-/// connections are executing each query. `query_start` also includes the actual SQL query string
+/// connections are executing each query. `query-start` also includes the actual SQL query string
 /// as its third argument.
 #[derive(Debug)]
 pub struct DTraceConnection<C: Connection> {
@@ -104,9 +104,9 @@ impl<C: Connection> DerefMut for DTraceConnection<C> {
 impl<C: Connection> SimpleConnection for DTraceConnection<C> {
     fn batch_execute(&mut self, query: &str) -> QueryResult<()> {
         let id = UniqueId::new();
-        probes::query_start!(|| (&id, self.id, query));
+        probes::query__start!(|| (&id, self.id, query));
         let result = self.inner.batch_execute(query);
-        probes::query_end!(|| (&id, self.id));
+        probes::query__done!(|| (&id, self.id));
         result
     }
 }
@@ -127,9 +127,9 @@ where
     fn establish(database_url: &str) -> ConnectionResult<Self> {
         let id = UniqueId::new();
         let conn_id = Uuid::new_v4();
-        probes::connection_establish_start!(|| (&id, conn_id, database_url));
+        probes::connection__establish__start!(|| (&id, conn_id, database_url));
         let conn = C::establish(database_url);
-        probes::connection_establish_end!(|| (&id, conn_id, u8::from(conn.is_ok())));
+        probes::connection__establish__done!(|| (&id, conn_id, u8::from(conn.is_ok())));
         let inner = conn?;
         Ok(DTraceConnection { inner, id: conn_id })
     }
@@ -140,17 +140,17 @@ where
         E: From<diesel::result::Error>,
     {
         let id = UniqueId::new();
-        probes::transaction_start!(|| (&id, self.id));
+        probes::transaction__start!(|| (&id, self.id));
         let result = f(self);
-        probes::transaction_end!(|| (&id, self.id));
+        probes::transaction__done!(|| (&id, self.id));
         result
     }
 
     fn execute(&mut self, query: &str) -> QueryResult<usize> {
         let id = UniqueId::new();
-        probes::query_start!(|| (&id, self.id, query));
+        probes::query__start!(|| (&id, self.id, query));
         let result = self.inner.execute(query);
-        probes::query_end!(|| (&id, self.id));
+        probes::query__done!(|| (&id, self.id));
         result
     }
 
@@ -165,13 +165,13 @@ where
     {
         let query = source.as_query();
         let id = UniqueId::new();
-        probes::query_start!(|| (
+        probes::query__start!(|| (
             &id,
             self.id,
             debug_query::<Self::Backend, _>(&query).to_string()
         ));
         let result = self.inner.load(query);
-        probes::query_end!(|| (&id, self.id));
+        probes::query__done!(|| (&id, self.id));
         result
     }
 
@@ -180,13 +180,13 @@ where
         T: QueryFragment<Self::Backend> + QueryId,
     {
         let id = UniqueId::new();
-        probes::query_start!(|| (
+        probes::query__start!(|| (
             &id,
             self.id,
             debug_query::<Self::Backend, _>(&source).to_string()
         ));
         let result = self.inner.execute_returning_count(source);
-        probes::query_end!(|| (&id, self.id));
+        probes::query__done!(|| (&id, self.id));
         result
     }
 

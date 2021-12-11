@@ -9,7 +9,7 @@ repository = "https://github.com/oxidecomputer/diesel-dtrace.git"
 [dependencies]
 diesel = { git = "https://github.com/diesel-rs/diesel", rev = "ce77c382", features = [ "r2d2" ] }
 serde = "1"
-usdt = "0.2"
+usdt = "0.3"
 uuid = { version = "0.8", features = [ "v4", "serde" ] }
 
 [dev-dependencies]
