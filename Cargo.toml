@@ -16,4 +16,4 @@ uuid = { version = "0.8", features = [ "v4", "serde" ] }
 diesel = { git = "https://github.com/diesel-rs/diesel", rev = "ce77c382", features = [ "postgres", "r2d2" ] }
 tokio = { version = "1", features = [ "macros", "rt-multi-thread" ] }
 async-bb8-diesel = { git = "https://github.com/oxidecomputer/async-bb8-diesel", rev = "22c26ef" }
-bb8 = "0.7"
+bb8 = "0.8"
