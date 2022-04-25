@@ -39,12 +39,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(asm)]
 #![cfg_attr(target_os = "macos", feature(asm_sym))]
 
 use diesel::backend::Backend;
 use diesel::connection::{
-    AnsiTransactionManager, ConnectionGatWorkaround, SimpleConnection, TransactionManager,
+    commit_error_processor::{CommitErrorOutcome, CommitErrorProcessor},
+    AnsiTransactionManager, ConnectionGatWorkaround, LoadRowIter, SimpleConnection,
+    TransactionManager,
 };
 use diesel::debug_query;
 use diesel::expression::QueryMetadata;
@@ -111,14 +112,17 @@ impl<C: Connection> SimpleConnection for DTraceConnection<C> {
     }
 }
 
-impl<'a, C: Connection> ConnectionGatWorkaround<'a, C::Backend> for DTraceConnection<C> {
-    type Cursor = <C as ConnectionGatWorkaround<'a, C::Backend>>::Cursor;
-    type Row = <C as ConnectionGatWorkaround<'a, C::Backend>>::Row;
+impl<'conn, 'query, C: Connection> ConnectionGatWorkaround<'conn, 'query, C::Backend>
+    for DTraceConnection<C>
+{
+    type Cursor = <C as ConnectionGatWorkaround<'conn, 'query, C::Backend>>::Cursor;
+    type Row = <C as ConnectionGatWorkaround<'conn, 'query, C::Backend>>::Row;
 }
 
 impl<C> Connection for DTraceConnection<C>
 where
-    C: Connection<TransactionManager = AnsiTransactionManager>,
+    C: Connection<TransactionManager = AnsiTransactionManager> + CommitErrorProcessor,
+    C::Backend: Default,
     <C::Backend as Backend>::QueryBuilder: Default,
 {
     type Backend = C::Backend;
@@ -146,21 +150,13 @@ where
         result
     }
 
-    fn execute(&mut self, query: &str) -> QueryResult<usize> {
-        let id = UniqueId::new();
-        probes::query__start!(|| (&id, self.id, query));
-        let result = self.inner.execute(query);
-        probes::query__done!(|| (&id, self.id));
-        result
-    }
-
-    fn load<T>(
-        &mut self,
+    fn load<'conn, 'query, T>(
+        &'conn mut self,
         source: T,
-    ) -> QueryResult<<Self as ConnectionGatWorkaround<Self::Backend>>::Cursor>
+    ) -> QueryResult<LoadRowIter<'conn, 'query, Self, Self::Backend>>
     where
-        T: AsQuery,
-        T::Query: QueryFragment<Self::Backend> + QueryId,
+        T: AsQuery + QueryFragment<Self::Backend>,
+        T::Query: QueryFragment<Self::Backend> + QueryId + 'query,
         Self::Backend: QueryMetadata<T::SqlType>,
     {
         let query = source.as_query();
@@ -197,9 +193,18 @@ where
     }
 }
 
+impl<C: Connection + CommitErrorProcessor> CommitErrorProcessor for DTraceConnection<C> {
+    fn process_commit_error(&self, error: diesel::result::Error) -> CommitErrorOutcome {
+        self.inner.process_commit_error(error)
+    }
+}
+
 impl<C> R2D2Connection for DTraceConnection<C>
 where
-    C: R2D2Connection + Connection<TransactionManager = AnsiTransactionManager>,
+    C: R2D2Connection
+        + Connection<TransactionManager = AnsiTransactionManager>
+        + CommitErrorProcessor,
+    C::Backend: Default,
     <C::Backend as Backend>::QueryBuilder: Default,
 {
     fn ping(&mut self) -> QueryResult<()> {
