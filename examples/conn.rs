@@ -17,7 +17,7 @@ fn main() {
         .expect("Failed to build pool");
     let mut conn = pool.get().expect("Failed to connect to DB");
     let _ = conn
-        .execute("SELECT 1")
+        .load(diesel::dsl::sql_query("SELECT 1"))
         .expect("Failed to execute statement");
     let _ = conn
         .batch_execute(concat!(
