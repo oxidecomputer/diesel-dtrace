@@ -13,7 +13,7 @@ jobs:
   check-style:
     runs-on: ubuntu-18.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Report cargo version
       run: cargo --version
     - name: Report rustfmt version
@@ -28,7 +28,7 @@ jobs:
       matrix:
         os: [ ubuntu-latest ]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -46,7 +46,7 @@ jobs:
       matrix:
         os: [ macos-latest ]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: nightly-2022-05-12
