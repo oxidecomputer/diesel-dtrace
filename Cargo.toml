@@ -18,10 +18,10 @@ diesel = { version = "2.0.0-rc.0", features = [ "r2d2", "i-implement-a-third-par
 lock_api = "=0.4.6"
 serde = "1"
 usdt = "0.3"
-uuid = { version = "0.8", features = [ "v4", "serde" ] }
+uuid = { version = ">=0.8.0, <2.0.0", features = [ "v4", "serde" ] }
 
 [dev-dependencies]
 diesel = { version = "2.0.0-rc.0", features = [ "postgres", "r2d2", "i-implement-a-third-party-backend-and-opt-into-breaking-changes" ] }
 tokio = { version = "1", features = [ "macros", "rt-multi-thread" ] }
-async-bb8-diesel = { git = "https://github.com/oxidecomputer/async-bb8-diesel", branch = "diesel2" }
+async-bb8-diesel = { git = "https://github.com/oxidecomputer/async-bb8-diesel" }
 bb8 = "0.8"

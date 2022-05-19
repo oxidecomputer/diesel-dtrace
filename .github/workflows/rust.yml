@@ -1,0 +1,58 @@
+#
+# Configuration for GitHub-based CI, based on the stock GitHub Rust config.
+#
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  check-style:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: Report cargo version
+      run: cargo --version
+    - name: Report rustfmt version
+      run: cargo fmt -- --version
+    - name: Check style
+      run: cargo fmt -- --check
+
+  stable-test:
+    name: Verify stable toolchain
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        profile: minimal
+    - name: Build
+      run: cargo build --tests --verbose
+    - name: Run tests
+      run: cargo test --verbose
+
+  nightly-test:
+    name: Verify nightly toolchain
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ macos-latest ]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly-2022-05-12
+        override: true
+        profile: minimal
+    - name: Build
+      run: cargo build --tests --verbose
+    - name: Run tests
+      run: cargo test --verbose
