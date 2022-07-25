@@ -1,7 +1,10 @@
 // Copyright 2021 Oxide Computer Company
 
 use diesel::r2d2::Pool;
-use diesel::{connection::SimpleConnection, pg::PgConnection, r2d2::ConnectionManager, Connection};
+use diesel::{
+    connection::LoadConnection, connection::SimpleConnection, pg::PgConnection,
+    r2d2::ConnectionManager,
+};
 use diesel_dtrace::DTraceConnection;
 
 fn main() {
