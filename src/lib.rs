@@ -43,8 +43,7 @@
 
 use diesel::backend::Backend;
 use diesel::connection::{
-    commit_error_processor::{CommitErrorOutcome, CommitErrorProcessor},
-    AnsiTransactionManager, ConnectionGatWorkaround, LoadRowIter, SimpleConnection,
+    AnsiTransactionManager, ConnectionGatWorkaround, LoadConnection, LoadRowIter, SimpleConnection,
     TransactionManager,
 };
 use diesel::debug_query;
@@ -119,9 +118,37 @@ impl<'conn, 'query, C: Connection> ConnectionGatWorkaround<'conn, 'query, C::Bac
     type Row = <C as ConnectionGatWorkaround<'conn, 'query, C::Backend>>::Row;
 }
 
+impl<C> LoadConnection for DTraceConnection<C>
+where
+    C: Connection<TransactionManager = AnsiTransactionManager> + LoadConnection,
+    C::Backend: Default,
+    <C::Backend as Backend>::QueryBuilder: Default,
+{
+    fn load<'conn, 'query, T>(
+        &'conn mut self,
+        source: T,
+    ) -> QueryResult<LoadRowIter<'conn, 'query, Self, Self::Backend>>
+    where
+        T: AsQuery + QueryFragment<Self::Backend>,
+        T::Query: QueryFragment<Self::Backend> + QueryId + 'query,
+        Self::Backend: QueryMetadata<T::SqlType>,
+    {
+        let query = source.as_query();
+        let id = UniqueId::new();
+        probes::query__start!(|| (
+            &id,
+            self.id,
+            debug_query::<Self::Backend, _>(&query).to_string()
+        ));
+        let result = self.inner.load(query);
+        probes::query__done!(|| (&id, self.id));
+        result
+    }
+}
+
 impl<C> Connection for DTraceConnection<C>
 where
-    C: Connection<TransactionManager = AnsiTransactionManager> + CommitErrorProcessor,
+    C: Connection<TransactionManager = AnsiTransactionManager>,
     C::Backend: Default,
     <C::Backend as Backend>::QueryBuilder: Default,
 {
@@ -150,27 +177,6 @@ where
         result
     }
 
-    fn load<'conn, 'query, T>(
-        &'conn mut self,
-        source: T,
-    ) -> QueryResult<LoadRowIter<'conn, 'query, Self, Self::Backend>>
-    where
-        T: AsQuery + QueryFragment<Self::Backend>,
-        T::Query: QueryFragment<Self::Backend> + QueryId + 'query,
-        Self::Backend: QueryMetadata<T::SqlType>,
-    {
-        let query = source.as_query();
-        let id = UniqueId::new();
-        probes::query__start!(|| (
-            &id,
-            self.id,
-            debug_query::<Self::Backend, _>(&query).to_string()
-        ));
-        let result = self.inner.load(query);
-        probes::query__done!(|| (&id, self.id));
-        result
-    }
-
     fn execute_returning_count<T>(&mut self, source: &T) -> QueryResult<usize>
     where
         T: QueryFragment<Self::Backend> + QueryId,
@@ -193,17 +199,9 @@ where
     }
 }
 
-impl<C: Connection + CommitErrorProcessor> CommitErrorProcessor for DTraceConnection<C> {
-    fn process_commit_error(&self, error: diesel::result::Error) -> CommitErrorOutcome {
-        self.inner.process_commit_error(error)
-    }
-}
-
 impl<C> R2D2Connection for DTraceConnection<C>
 where
-    C: R2D2Connection
-        + Connection<TransactionManager = AnsiTransactionManager>
-        + CommitErrorProcessor,
+    C: R2D2Connection + Connection<TransactionManager = AnsiTransactionManager>,
     C::Backend: Default,
     <C::Backend as Backend>::QueryBuilder: Default,
 {

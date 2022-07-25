@@ -7,7 +7,7 @@ license = "Apache-2.0"
 repository = "https://github.com/oxidecomputer/diesel-dtrace.git"
 
 [dependencies]
-diesel = { version = "2.0.0-rc.0", features = [ "r2d2", "i-implement-a-third-party-backend-and-opt-into-breaking-changes" ] }
+diesel = { version = "2.0.0-rc.1", features = [ "r2d2", "i-implement-a-third-party-backend-and-opt-into-breaking-changes" ] }
 # NOTE: This dependency is not directly used, and may eventually be removed.
 #
 # diesel-dtrace is frequently compiled with nightly.
@@ -21,7 +21,7 @@ usdt = "0.3"
 uuid = { version = ">=0.8.0, <2.0.0", features = [ "v4", "serde" ] }
 
 [dev-dependencies]
-diesel = { version = "2.0.0-rc.0", features = [ "postgres", "r2d2", "i-implement-a-third-party-backend-and-opt-into-breaking-changes" ] }
+diesel = { version = "2.0.0-rc.1", features = [ "postgres", "r2d2", "i-implement-a-third-party-backend-and-opt-into-breaking-changes" ] }
 tokio = { version = "1", features = [ "macros", "rt-multi-thread" ] }
 async-bb8-diesel = { git = "https://github.com/oxidecomputer/async-bb8-diesel" }
 bb8 = "0.8"
