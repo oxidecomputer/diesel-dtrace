@@ -172,7 +172,7 @@ where
     {
         let id = UniqueId::new();
         probes::transaction__start!(|| (&id, self.id));
-        let result = f(self);
+        let result = Self::TransactionManager::transaction(self, f);
         probes::transaction__done!(|| (&id, self.id));
         result
     }
