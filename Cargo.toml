@@ -15,7 +15,7 @@ diesel = { version = "2.0.0-rc.1", features = [ "r2d2", "i-implement-a-third-par
 # following issue: https://github.com/Amanieu/parking_lot/issues/336
 #
 # As a workaround, we pin 0.4.6.
-lock_api = "=0.4.7"
+lock_api = "=0.4.8"
 serde = "1"
 usdt = "0.3"
 uuid = { version = ">=0.8.0, <2.0.0", features = [ "v4", "serde" ] }
