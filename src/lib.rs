@@ -25,7 +25,7 @@
 //! on a connection being established or query executing (e.g., tracing all system calls while a
 //! query is running).
 
-// Copyright 2021 Oxide Computer Company
+// Copyright 2022 Oxide Computer Company
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,7 +39,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![cfg_attr(target_os = "macos", feature(asm_sym))]
+// The `usdt` crate may require features (and thus nightly), depending on the
+// toolchain version and platform.
+#![cfg_attr(not(usdt_stable_asm), feature(asm))]
+#![cfg_attr(all(target_os = "macos", not(usdt_stable_asm_sym)), feature(asm_sym))]
 
 use diesel::backend::Backend;
 use diesel::connection::{

@@ -17,8 +17,11 @@ diesel = { version = "2.0.0-rc.1", features = [ "r2d2", "i-implement-a-third-par
 # As a workaround, we pin 0.4.6.
 lock_api = "=0.4.8"
 serde = "1"
-usdt = "0.3"
+usdt = ">=0.3.5"
 uuid = { version = ">=0.8.0, <2.0.0", features = [ "v4", "serde" ] }
+
+[build-dependencies]
+version_check = "0.9"
 
 [dev-dependencies]
 diesel = { version = "2.0.0-rc.1", features = [ "postgres", "r2d2", "i-implement-a-third-party-backend-and-opt-into-breaking-changes" ] }
