@@ -3,7 +3,7 @@
 #: name = "build-and-test / illumos"
 #: variety = "basic"
 #: target = "helios"
-#: rust_toolchain = "stable"
+#: rust_toolchain = "1.66"
 #:
 
 set -o errexit
