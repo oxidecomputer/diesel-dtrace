@@ -44,8 +44,7 @@
 
 use diesel::backend::Backend;
 use diesel::connection::{
-    AnsiTransactionManager, ConnectionGatWorkaround, LoadConnection, LoadRowIter, SimpleConnection,
-    TransactionManager,
+    AnsiTransactionManager, LoadConnection, SimpleConnection, TransactionManager,
 };
 use diesel::debug_query;
 use diesel::expression::QueryMetadata;
@@ -112,26 +111,21 @@ impl<C: Connection> SimpleConnection for DTraceConnection<C> {
     }
 }
 
-impl<'conn, 'query, C: Connection> ConnectionGatWorkaround<'conn, 'query, C::Backend>
-    for DTraceConnection<C>
-{
-    type Cursor = <C as ConnectionGatWorkaround<'conn, 'query, C::Backend>>::Cursor;
-    type Row = <C as ConnectionGatWorkaround<'conn, 'query, C::Backend>>::Row;
-}
-
 impl<C> LoadConnection for DTraceConnection<C>
 where
     C: Connection<TransactionManager = AnsiTransactionManager> + LoadConnection,
     C::Backend: Default,
     <C::Backend as Backend>::QueryBuilder: Default,
 {
+    type Cursor<'conn, 'query> = C::Cursor< 'conn, 'query> where Self: 'conn;
+    type Row<'conn, 'query> = C::Row<'conn, 'query> where Self: 'conn;
+
     fn load<'conn, 'query, T>(
         &'conn mut self,
         source: T,
-    ) -> QueryResult<LoadRowIter<'conn, 'query, Self, Self::Backend>>
+    ) -> QueryResult<Self::Cursor<'conn, 'query>>
     where
-        T: AsQuery + QueryFragment<Self::Backend>,
-        T::Query: QueryFragment<Self::Backend> + QueryId + 'query,
+        T: diesel::query_builder::Query + QueryFragment<Self::Backend> + QueryId + 'query,
         Self::Backend: QueryMetadata<T::SqlType>,
     {
         let query = source.as_query();
@@ -198,6 +192,14 @@ where
     ) -> &mut <C::TransactionManager as TransactionManager<C>>::TransactionStateData {
         self.inner.transaction_state()
     }
+}
+
+impl<C> diesel::connection::ConnectionSealed for DTraceConnection<C>
+where
+    C: Connection<TransactionManager = AnsiTransactionManager>,
+    C::Backend: Default,
+    <C::Backend as Backend>::QueryBuilder: Default,
+{
 }
 
 impl<C> R2D2Connection for DTraceConnection<C>
