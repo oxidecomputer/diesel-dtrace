@@ -10,7 +10,7 @@ repository = "https://github.com/oxidecomputer/diesel-dtrace.git"
 diesel = { version = "2.1.0", features = [ "r2d2", "i-implement-a-third-party-backend-and-opt-into-breaking-changes" ] }
 serde = "1"
 usdt = "0.3"
-uuid = { version = ">=0.8.0, <2.0.0", features = [ "v4", "serde" ] }
+uuid = { version = ">=0.8.2, <2.0.0", features = [ "v4", "serde" ] }
 
 [dev-dependencies]
 async-bb8-diesel = { git = "https://github.com/oxidecomputer/async-bb8-diesel" }
