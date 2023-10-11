@@ -12,7 +12,7 @@ before the probe points are executed.
 
 ## Probes
 
-```
+```ignore
 diesel-db*:::connection-establish-start(id: uint64_t, conn_id: Uuid, url: &str);
 diesel-db*:::connection-establish-done(id: uint64_t, conn_id: Uuid, success: u8);
 diesel-db*:::query-start(id: uint64_t, conn_id: Uuid, query: &str);
@@ -27,7 +27,7 @@ The example at `examples/conn.rs` attempts to connect to a PostgreSQL database a
 provided (or localhost:5432), and run a few simple queries. The probes fired by the example can
 be seen with:
 
-```bash
+```console
 # dtrace -Zqn 'diesel*::: { printf("%s (%d)\n", probename, arg0) }'
 connection_establish_start (4294967297)
 connection_establish_end (4294967297)
