@@ -1,30 +1,4 @@
-//! Add DTrace probes to Diesel connections.
-//!
-//! The `diesel-dtrace` crate provides a diesel [`Connection`] that includes DTrace probe points.
-//! Probes are fired when a connection to the database is established and for each query.
-//!
-//! Example
-//! -------
-//!
-//! The example at `examples/conn.rs` attempts to connect to a PostgreSQL database at the URL
-//! provided (or localhost:5432), and run a few simple queries. The probes fired by the example can
-//! be seen with:
-//!
-//! ```bash
-//! ## dtrace -Zqn 'diesel-db*::: { printf("%s (%d)\n", probename, arg0) }'
-//! connection-establish-start (4294967297)
-//! connection-establish-done (4294967297)
-//! query-start (4294967298)
-//! query-done (4294967298)
-//! query-start (4294967299)
-//! query-done (4294967299)
-//! ```
-//!
-//! All probes emit a unique ID as their first argument, which allows correlating the start/done
-//! probes. This is crucial for timing the latency of queries, or predicating other DTrace actions
-//! on a connection being established or query executing (e.g., tracing all system calls while a
-//! query is running).
-
+#![doc = include_str!("../README.md")]
 // Copyright 2023 Oxide Computer Company
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,7 +12,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 #![cfg_attr(usdt_need_asm, feature(asm))]
 #![cfg_attr(all(target_os = "macos", usdt_need_asm_sym), feature(asm_sym))]
 

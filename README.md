@@ -2,20 +2,32 @@
 
 Add DTrace probes to Diesel connections.
 
-Overview
---------
+## Overview
 
 The `diesel-dtrace` crate provides a diesel [`Connection`][1] that includes DTrace probe points.
 Probes are fired when a connection to the database is established and for each query.
 
-Example
--------
+In order to register probes, your program must invoke `usdt::register_probes()`
+before the probe points are executed.
+
+## Probes
+
+```ignore
+diesel-db*:::connection-establish-start(id: uint64_t, conn_id: Uuid, url: &str);
+diesel-db*:::connection-establish-done(id: uint64_t, conn_id: Uuid, success: u8);
+diesel-db*:::query-start(id: uint64_t, conn_id: Uuid, query: &str);
+diesel-db*:::query-done(id: uint64_t, conn_id: Uuid);
+diesel-db*:::transaction-start(id: uint64_t, conn_id: Uuid);
+diesel-db*:::transaction-done(id: uint64_t, conn_id: Uuid);
+```
+
+## Example
 
 The example at `examples/conn.rs` attempts to connect to a PostgreSQL database at the URL
 provided (or localhost:5432), and run a few simple queries. The probes fired by the example can
 be seen with:
 
-```bash
+```console
 # dtrace -Zqn 'diesel*::: { printf("%s (%d)\n", probename, arg0) }'
 connection_establish_start (4294967297)
 connection_establish_end (4294967297)
@@ -30,12 +42,11 @@ probes. This is crucial for timing the latency of queries, or predicating other 
 on a connection being established or query executing (e.g., tracing all system calls while a
 query is running).
 
-Notes
------
+## Notes
 
-This crate relies on the [`usdt`][2] crate, which requires a nightly compiler. On macOS systems,
-the compiler version must be at least 2021-11-24. On non-macOS systems, a stable toolchain
-will be supported once the [`asm` feature lands in stable][2].
+This crate relies on the [`usdt`][2] crate. On macOS systems, a nightly
+compiler is required prior to Rust 1.67. On other systems a nightly compiler is
+required prior to Rust 1.59.
 
 [1]: https://docs.rs/diesel/latest/diesel/connection/trait.Connection.html
-[2]: https://github.com/rust-lang/rust/issues/72016#issuecomment-964421481
+[2]: https://crates.io/crates/usdt
