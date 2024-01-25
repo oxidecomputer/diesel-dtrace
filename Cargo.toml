@@ -1,6 +1,6 @@
 [package]
 name = "diesel-dtrace"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Benjamin Naecker <ben@oxide.computer>"]
 license = "Apache-2.0"
@@ -9,7 +9,7 @@ repository = "https://github.com/oxidecomputer/diesel-dtrace.git"
 [dependencies]
 diesel = { version = "2.1.0", features = [ "r2d2", "i-implement-a-third-party-backend-and-opt-into-breaking-changes" ] }
 serde = "1"
-usdt = "0.3"
+usdt = "0.5"
 uuid = { version = ">=0.8.0, <2.0.0", features = [ "v4", "serde" ] }
 
 [dev-dependencies]

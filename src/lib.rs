@@ -28,7 +28,7 @@ use std::ops::{Deref, DerefMut};
 use usdt::UniqueId;
 use uuid::Uuid;
 
-#[usdt::provider(provider = "diesel__db")]
+#[usdt::provider(provider = "diesel_db")]
 pub mod probes {
     pub fn connection__establish__start(_: &UniqueId, conn_id: Uuid, url: &str) {}
     pub fn connection__establish__done(_: &UniqueId, conn_id: Uuid, success: u8) {}
