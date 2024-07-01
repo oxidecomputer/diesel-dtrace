@@ -28,6 +28,14 @@ jobs:
       matrix:
         os: [ ubuntu-latest, macos-latest ]
     steps:
+    - name: install-pq-mac
+      if: ${{ matrix.os == 'macos-latest' }}
+      env:
+        PQ_LIB_DIR: "$(brew --prefix libpq)/lib"
+        LIBRARY_PATH: "/opt/homebrew/lib:$LIBRARY_PATH"
+        PKG_CONFIG_PATH: "/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH"
+        PATH: "/opt/homebrew/bin:$PATH"
+      run: brew install postgresql
     - uses: actions/checkout@v4
     - uses: actions-rs/toolchain@v1
       with:
@@ -46,6 +54,14 @@ jobs:
       matrix:
         os: [ ubuntu-latest, macos-latest ]
     steps:
+    - name: install-pq-mac
+      if: ${{ matrix.os == 'macos-latest' }}
+      env:
+        PQ_LIB_DIR: "$(brew --prefix libpq)/lib"
+        LIBRARY_PATH: "/opt/homebrew/lib:$LIBRARY_PATH"
+        PKG_CONFIG_PATH: "/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH"
+        PATH: "/opt/homebrew/bin:$PATH"
+      run: brew install postgresql
     - uses: actions/checkout@v4
     - uses: actions-rs/toolchain@v1
       with:
