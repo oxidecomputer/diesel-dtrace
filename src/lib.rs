@@ -165,6 +165,16 @@ where
     ) -> &mut <C::TransactionManager as TransactionManager<C>>::TransactionStateData {
         self.inner.transaction_state()
     }
+
+    /// We won't probe this method, and we'll just delegate to the inner connection.
+    fn instrumentation(&mut self) -> &mut dyn diesel::connection::Instrumentation {
+        self.inner.instrumentation()
+    }
+
+    /// We won't probe this method, and we'll just delegate to the inner connection.
+    fn set_instrumentation(&mut self, instrumentation: impl diesel::connection::Instrumentation) {
+        self.inner.set_instrumentation(instrumentation)
+    }
 }
 
 impl<C> diesel::connection::ConnectionSealed for DTraceConnection<C>
