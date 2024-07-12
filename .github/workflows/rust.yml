@@ -37,11 +37,7 @@ jobs:
         PATH: "/opt/homebrew/bin:$PATH"
       run: brew install postgresql
     - uses: actions/checkout@v4
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
-        profile: minimal
+    - uses: dtolnay/rust-toolchain@stable
     - name: Build
       run: cargo build --tests --verbose
     - name: Run tests
@@ -63,11 +59,7 @@ jobs:
         PATH: "/opt/homebrew/bin:$PATH"
       run: brew install postgresql
     - uses: actions/checkout@v4
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: nightly
-        override: true
-        profile: minimal
+    - uses: dtolnay/rust-toolchain@nightly
     - name: Build
       run: cargo build --tests --verbose
     - name: Run tests
