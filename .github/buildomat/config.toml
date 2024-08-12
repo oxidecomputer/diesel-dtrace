@@ -3,3 +3,12 @@
 # the buildomat integration to create check suites.
 #
 enable = true
+
+#
+# We accept pull requests from several automated services that are outside the
+# organisation.  Allow jobs from those sources to proceed without manual
+# approval:
+#
+allow_users = [
+        "dependabot[bot]"
+]
