@@ -20,7 +20,7 @@ checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 [[package]]
 name = "async-bb8-diesel"
 version = "0.2.1"
-source = "git+https://github.com/oxidecomputer/async-bb8-diesel#889e85ce5485181fcbd43f43cc1004aef51d8828"
+source = "git+https://github.com/oxidecomputer/async-bb8-diesel#1850c9d9a9311ff6a60cadee9023e7693eda3304"
 dependencies = [
  "async-trait",
  "bb8",
@@ -32,9 +32,9 @@ dependencies = [
 
 [[package]]
 name = "async-trait"
-version = "0.1.80"
+version = "0.1.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6fa2087f2753a7da8cc1c0dbfcf89579dd57458e36769de5ac750b4671737ca"
+checksum = "6e0c28dcc82d7c8ead5cb13beb15405b57b8546e93215673ff8ca0349a028107"
 dependencies = [
  "proc-macro2",
  "quote",
