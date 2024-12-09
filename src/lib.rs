@@ -87,7 +87,7 @@ impl<C: Connection> SimpleConnection for DTraceConnection<C> {
 
 impl<C> LoadConnection for DTraceConnection<C>
 where
-    C: Connection<TransactionManager = DTraceTransactionManager> + LoadConnection,
+    C: Connection<TransactionManager = AnsiTransactionManager> + LoadConnection,
     C::Backend: Default,
     <C::Backend as Backend>::QueryBuilder: Default,
 {
@@ -123,12 +123,12 @@ where
 
 impl<C> Connection for DTraceConnection<C>
 where
-    C: Connection<TransactionManager = DTraceTransactionManager>,
+    C: Connection<TransactionManager = AnsiTransactionManager>,
     C::Backend: Default,
     <C::Backend as Backend>::QueryBuilder: Default,
 {
     type Backend = C::Backend;
-    type TransactionManager = DTraceTransactionManager;
+    type TransactionManager = DTraceTransactionManager<C>;
 
     fn establish(database_url: &str) -> ConnectionResult<Self> {
         let id = UniqueId::new();
@@ -147,7 +147,7 @@ where
     {
         let id = UniqueId::new();
         probes::transaction__start!(|| (&id, self.id));
-        let result = Self::TransactionManager::transaction(self, f);
+        let result = DTraceTransactionManager::transaction(self, f);
         probes::transaction__done!(|| (&id, self.id, u8::from(!result.is_ok())));
         result
     }
@@ -169,7 +169,7 @@ where
 
     fn transaction_state(
         &mut self,
-    ) -> &mut <DTraceTransactionManager as TransactionManager<C>>::TransactionStateData {
+    ) -> &mut <DTraceTransactionManager<C> as TransactionManager<DTraceConnection<C>>>::TransactionStateData {
         self.inner.transaction_state()
     }
 
@@ -186,7 +186,7 @@ where
 
 impl<C> diesel::connection::ConnectionSealed for DTraceConnection<C>
 where
-    C: Connection<TransactionManager = DTraceTransactionManager>,
+    C: Connection<TransactionManager = AnsiTransactionManager>,
     C::Backend: Default,
     <C::Backend as Backend>::QueryBuilder: Default,
 {
@@ -194,7 +194,7 @@ where
 
 impl<C> R2D2Connection for DTraceConnection<C>
 where
-    C: R2D2Connection + Connection<TransactionManager = DTraceTransactionManager>,
+    C: R2D2Connection + Connection<TransactionManager = AnsiTransactionManager>,
     C::Backend: Default,
     <C::Backend as Backend>::QueryBuilder: Default,
 {
@@ -203,29 +203,31 @@ where
     }
 }
 
-pub struct DTraceTransactionManager;
+pub struct DTraceTransactionManager<C> {
+    _data: std::marker::PhantomData<C>,
+}
 
-impl<C> TransactionManager<C> for DTraceTransactionManager
+impl<C> TransactionManager<DTraceConnection<C>> for DTraceTransactionManager<C>
 where
-    C: Connection<TransactionManager = Self>,
+    C: Connection<TransactionManager = AnsiTransactionManager>,
     C::Backend: Default,
     <C::Backend as Backend>::QueryBuilder: Default,
 {
-    type TransactionStateData = UniqueId;
+    type TransactionStateData = AnsiTransactionManager;
 
-    fn begin_transaction(conn: &mut C) -> QueryResult<()> {
-        todo!()
+    fn begin_transaction(conn: &mut DTraceConnection<C>) -> QueryResult<()> {
+        AnsiTransactionManager::begin_transaction(&mut conn.inner)
     }
 
-    fn rollback_transaction(conn: &mut C) -> QueryResult<()> {
-        todo!()
+    fn rollback_transaction(conn: &mut DTraceConnection<C>) -> QueryResult<()> {
+        AnsiTransactionManager::rollback_transaction(&mut conn.inner)
     }
 
-    fn commit_transaction(conn: &mut C) -> QueryResult<()> {
-        todo!()
+    fn commit_transaction(conn: &mut DTraceConnection<C>) -> QueryResult<()> {
+        AnsiTransactionManager::commit_transaction(&mut conn.inner)
     }
 
-    fn transaction_manager_status_mut(conn: &mut C) -> &mut TransactionManagerStatus {
-        todo!()
+    fn transaction_manager_status_mut(conn: &mut DTraceConnection<C>) -> &mut TransactionManagerStatus {
+        AnsiTransactionManager::transaction_manager_status_mut(&mut conn.inner)
     }
 }
