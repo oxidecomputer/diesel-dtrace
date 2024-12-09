@@ -267,7 +267,7 @@ where
         //
         // In any case, it is probably "fine" to pay this cost all the time,
         // even though it's antithetical to the "zero disabled-probe effect"
-        // ethos of DTrace. These methos really just take a pointer to a field
+        // ethos of DTrace. These methods really just take a pointer to a field
         // of `AnsiTransactionManager`, and destructure a few enums. It should
         // be in the noise for any realistic database application.
         let depth = Self::depth(conn);
