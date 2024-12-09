@@ -31,12 +31,38 @@ use uuid::Uuid;
 
 #[usdt::provider(provider = "diesel_db")]
 pub mod probes {
+    /// Fires right before we attempt to establish a connection.
     pub fn connection__establish__start(_: &UniqueId, conn_id: Uuid, url: &str) {}
+    /// Fires when we finish establishing a connection, with a flag indicating
+    /// whether it succeeded or failed.
     pub fn connection__establish__done(_: &UniqueId, conn_id: Uuid, success: u8) {}
+    /// Fires just before issuing a SQL query.
     pub fn query__start(_: &UniqueId, conn_id: Uuid, query: &str) {}
+    /// Fires when a query completes.
     pub fn query__done(_: &UniqueId, conn_id: Uuid) {}
-    pub fn transaction__start(_: &UniqueId, conn_id: Uuid) {}
-    pub fn transaction__done(_: &UniqueId, conn_id: Uuid, rollback: u8) {}
+    /// Fires when we start a transaction.
+    ///
+    /// This includes the connection ID as well as the depth of the transaction.
+    /// As transactions can be nested, _both_ of these are required to unique ID
+    /// a transaction in full.
+    ///
+    /// The depth is `0` if there is no outstanding transaction, meaning this is
+    /// not nested inside another transaction. Querying the transaction status
+    /// may fail, in which case `depth == -1`.
+    pub fn transaction__start(conn_id: Uuid, depth: i64) {}
+    /// Fires when a transaction completes.
+    ///
+    /// This includes the connection ID as well as the depth of the transaction.
+    /// As transactions can be nested, _both_ of these are required to unique ID
+    /// a transaction in full.
+    ///
+    /// The depth is `0` if there is no outstanding transaction, meaning this is
+    /// not nested inside another transaction. Querying the transaction status
+    /// may fail, in which case `depth == -1`.
+    ///
+    /// This also includes a flag indicating whether the transaction was
+    /// committed (`committed == 1`) or rolled back (`committed == 0`).
+    pub fn transaction__done(conn_id: Uuid, depth: i64, committed: u8) {}
 }
 
 /// A [`Connection`] that includes DTrace probe points.
@@ -140,18 +166,6 @@ where
         Ok(DTraceConnection { inner, id: conn_id })
     }
 
-    fn transaction<T, E, F>(&mut self, f: F) -> Result<T, E>
-    where
-        F: FnOnce(&mut Self) -> Result<T, E>,
-        E: From<diesel::result::Error>,
-    {
-        let id = UniqueId::new();
-        probes::transaction__start!(|| (&id, self.id));
-        let result = DTraceTransactionManager::transaction(self, f);
-        probes::transaction__done!(|| (&id, self.id, u8::from(!result.is_ok())));
-        result
-    }
-
     fn execute_returning_count<T>(&mut self, source: &T) -> QueryResult<usize>
     where
         T: QueryFragment<Self::Backend> + QueryId,
@@ -169,7 +183,7 @@ where
 
     fn transaction_state(
         &mut self,
-    ) -> &mut <DTraceTransactionManager<C> as TransactionManager<DTraceConnection<C>>>::TransactionStateData {
+    ) -> &mut <DTraceTransactionManager<C> as TransactionManager<DTraceConnection<C>>>::TransactionStateData{
         self.inner.transaction_state()
     }
 
@@ -207,6 +221,21 @@ pub struct DTraceTransactionManager<C> {
     _data: std::marker::PhantomData<C>,
 }
 
+impl<C> DTraceTransactionManager<C>
+where
+    C: Connection<TransactionManager = AnsiTransactionManager>,
+{
+    /// Compute the current transaction depth for the DTrace probes.
+    fn depth(conn: &mut DTraceConnection<C>) -> i64 {
+        let status = AnsiTransactionManager::transaction_manager_status_mut(&mut conn.inner);
+        match status.transaction_depth() {
+            Ok(Some(depth)) => i64::from(depth.get()),
+            Ok(None) => 0,
+            Err(_) => -1,
+        }
+    }
+}
+
 impl<C> TransactionManager<DTraceConnection<C>> for DTraceTransactionManager<C>
 where
     C: Connection<TransactionManager = AnsiTransactionManager>,
@@ -216,18 +245,51 @@ where
     type TransactionStateData = AnsiTransactionManager;
 
     fn begin_transaction(conn: &mut DTraceConnection<C>) -> QueryResult<()> {
+        // TODO-performance: We're unconditionally computing the transaction
+        // depth here, even if the probe is not enabled.
+        //
+        // This ultimately comes from the interaction of a few things. These
+        // trait methods don't make it easy to store state -- since they take
+        // the mutable connection, not `&mut self`, we have to store everything
+        // on the connection type, but that interacts with the
+        // `Connection::transaction_state()` method weirdly. Second, even if we
+        // could do that, there's no good way to keep that in sync if the probes
+        // are disabled _while_ a transaction is outstanding (we'd end up
+        // thinking we were still in a transaction, when we're not anymore).
+        //
+        // Last, this interacts with a `Clone` bound on the `usdt` crate's
+        // argument closure that we pass to the probe macro itself. That is
+        // required today so that we can accurately type check the return value
+        // of the closure. Still, there are probably ways around that which
+        // still give nice error messages. See
+        // https://github.com/oxidecomputer/usdt/issues/136 for some more
+        // background and context.
+        //
+        // In any case, it is probably "fine" to pay this cost all the time,
+        // even though it's antithetical to the "zero disabled-probe effect"
+        // ethos of DTrace. These methos really just take a pointer to a field
+        // of `AnsiTransactionManager`, and destructure a few enums. It should
+        // be in the noise for any realistic database application.
+        let depth = Self::depth(conn);
+        probes::transaction__start!(|| (&conn.id, depth));
         AnsiTransactionManager::begin_transaction(&mut conn.inner)
     }
 
     fn rollback_transaction(conn: &mut DTraceConnection<C>) -> QueryResult<()> {
+        let depth = Self::depth(conn);
+        probes::transaction__done!(|| (&conn.id, depth, 0));
         AnsiTransactionManager::rollback_transaction(&mut conn.inner)
     }
 
     fn commit_transaction(conn: &mut DTraceConnection<C>) -> QueryResult<()> {
+        let depth = Self::depth(conn);
+        probes::transaction__done!(|| (&conn.id, depth, 1));
         AnsiTransactionManager::commit_transaction(&mut conn.inner)
     }
 
-    fn transaction_manager_status_mut(conn: &mut DTraceConnection<C>) -> &mut TransactionManagerStatus {
+    fn transaction_manager_status_mut(
+        conn: &mut DTraceConnection<C>,
+    ) -> &mut TransactionManagerStatus {
         AnsiTransactionManager::transaction_manager_status_mut(&mut conn.inner)
     }
 }
