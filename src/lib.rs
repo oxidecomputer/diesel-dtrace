@@ -90,8 +90,14 @@ where
     C::Backend: Default,
     <C::Backend as Backend>::QueryBuilder: Default,
 {
-    type Cursor<'conn, 'query> = C::Cursor< 'conn, 'query> where Self: 'conn;
-    type Row<'conn, 'query> = C::Row<'conn, 'query> where Self: 'conn;
+    type Cursor<'conn, 'query>
+        = C::Cursor<'conn, 'query>
+    where
+        Self: 'conn;
+    type Row<'conn, 'query>
+        = C::Row<'conn, 'query>
+    where
+        Self: 'conn;
 
     fn load<'conn, 'query, T>(
         &'conn mut self,
