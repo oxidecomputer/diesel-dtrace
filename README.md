@@ -5,7 +5,8 @@ Add DTrace probes to Diesel connections.
 ## Overview
 
 The `diesel-dtrace` crate provides a diesel [`Connection`][1] that includes DTrace probe points.
-Probes are fired when a connection to the database is established and for each query.
+Probes are fired when a connection to the database is established and for each
+query and transaction.
 
 In order to register probes, your program must invoke `usdt::register_probes()`
 before the probe points are executed.
@@ -13,13 +14,45 @@ before the probe points are executed.
 ## Probes
 
 ```ignore
-diesel-db*:::connection-establish-start(id: uint64_t, conn_id: Uuid, url: &str);
-diesel-db*:::connection-establish-done(id: uint64_t, conn_id: Uuid, success: u8);
-diesel-db*:::query-start(id: uint64_t, conn_id: Uuid, query: &str);
-diesel-db*:::query-done(id: uint64_t, conn_id: Uuid);
-diesel-db*:::transaction-start(id: uint64_t, conn_id: Uuid);
-diesel-db*:::transaction-done(id: uint64_t, conn_id: Uuid);
+/// Fires right before we attempt to establish a connection.
+connection-establish-start(id: &UniqueId, conn_id: Uuid, url: &str)
+/// Fires when we finish establishing a connection, with a flag indicating
+/// whether it succeeded or failed.
+connection-establish-done(id: &UniqueId, conn_id: Uuid, success: u8)
+/// Fires just before issuing a SQL query.
+query-start(id: &UniqueId, conn_id: Uuid, query: &str)
+/// Fires when a query completes.
+query-done(id: &UniqueId, conn_id: Uuid)
+/// Fires when we start a transaction.
+///
+/// This includes the connection ID as well as the depth of the transaction.
+/// As transactions can be nested, _both_ of these are required to unique ID
+/// a transaction in full.
+///
+/// The depth is `0` if there is no outstanding transaction, meaning this is
+/// not nested inside another transaction. Querying the transaction status
+/// may fail, in which case `depth == -1`.
+transaction-start(conn_id: Uuid, depth: i64)
+/// Fires when a transaction completes.
+///
+/// This includes the connection ID as well as the depth of the transaction.
+/// As transactions can be nested, _both_ of these are required to uniquely
+/// ID a transaction in full.
+///
+/// The depth is `0` if there is no outstanding transaction, meaning this is
+/// not nested inside another transaction. Querying the transaction status
+/// may fail, in which case `depth == -1`.
+///
+/// This also includes a flag indicating whether the transaction was
+/// committed (`committed == 1`) or rolled back (`committed == 0`).
+transaction-done(conn_id: Uuid, depth: i64, committed: u8)
 ```
+
+## Transaction probes
+
+It's important to note that the transaction-related probes include a connection
+ID and a depth. As transactions can be nested on the same connection, _both_ of
+these are required to uniquely identify transactions.
 
 ## Example
 
@@ -36,11 +69,6 @@ query_end (4294967298)
 query_start (4294967299)
 query_end (4294967299)
 ```
-
-All probes emit a unique ID as their first argument, which allows correlating the start/end
-probes. This is crucial for timing the latency of queries, or predicating other DTrace actions
-on a connection being established or query executing (e.g., tracing all system calls while a
-query is running).
 
 ## Notes
 

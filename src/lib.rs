@@ -53,8 +53,8 @@ pub mod probes {
     /// Fires when a transaction completes.
     ///
     /// This includes the connection ID as well as the depth of the transaction.
-    /// As transactions can be nested, _both_ of these are required to unique ID
-    /// a transaction in full.
+    /// As transactions can be nested, _both_ of these are required to uniquely
+    /// ID a transaction in full.
     ///
     /// The depth is `0` if there is no outstanding transaction, meaning this is
     /// not nested inside another transaction. Querying the transaction status
@@ -65,23 +65,58 @@ pub mod probes {
     pub fn transaction__done(conn_id: Uuid, depth: i64, committed: u8) {}
 }
 
-/// A [`Connection`] that includes DTrace probe points.
+/// A [`Connection`] wrapper that inserts DTrace probe points.
 ///
-/// This crate generates a provider named `diesel-db`. The following probe points are defined:
+/// This type generates a DTrace provider named `diesel_db`, with the following
+/// probe points defined. See the module-level documentation for more details.
 ///
 /// ```ignore
+/// // Fires right before we attempt to establish a connection.
 /// connection-establish-start(_: &UniqueId, conn_id: Uuid, url: &str)
+///
+/// // Fires when we finish establishing a connection, with a flag indicating
+/// // whether it succeeded or failed.
 /// connection-establish-done(_: &UniqueId, conn_id: Uuid, success: u8)
+///
+/// // Fires just before issuing a SQL query.
 /// query-start(_: &UniqueId, conn_id: Uuid, query: &str)
+///
+/// // Fires when a query completes.
 /// query-done(_: &UniqueId, conn_id: Uuid)
-/// transaction-start(_: &UniqueId, conn_id: Uuid)
-/// transaction-done(_: &UniqueId, conn_id: Uuid)
+///
+/// // Fires when we start a transaction.
+/// //
+/// // This includes the connection ID as well as the depth of the transaction.
+/// // As transactions can be nested, _both_ of these are required to uniquely
+/// // ID a transaction in full.
+/// //
+/// // The depth is `0` if there is no outstanding transaction, meaning this is
+/// // not nested inside another transaction. Querying the transaction status
+/// // may fail, in which case `depth == -1`.
+/// transaction-start(conn_id: Uuid, depth: i64)
+///
+/// // Fires when a transaction completes.
+/// //
+/// // This includes the connection ID as well as the depth of the transaction.
+/// // As transactions can be nested, _both_ of these are required to uniquely
+/// // ID a transaction in full.
+/// //
+/// // The depth is `0` if there is no outstanding transaction, meaning this is
+/// // not nested inside another transaction. Querying the transaction status
+/// // may fail, in which case `depth == -1`.
+/// //
+/// // This also includes a flag indicating whether the transaction was
+/// // committed (`committed == 1`) or rolled back (`committed == 0`).
+/// transaction-done(conn_id: Uuid, depth: i64, committed: u8)
 /// ```
 ///
-/// The first argument is a [`UniqueId`], which enables correlating the start and done probes.
-/// `conn_id` is a unique identifier for the connection itself, which enables one to see which
-/// connections are executing each query. `query-start` also includes the actual SQL query string
-/// as its third argument.
+/// These probes contain several unique identifiers to help correlate start and
+/// done probes. The [`UniqueId`] is an auto-generated, opaque thread-local.
+/// Probes also contain the connection's UUID.
+///
+/// Note that probes related to transactions include a `depth`. As transactions
+/// can be nested on one connection, both the connection ID and depth are needed
+/// to uniquely identify the probe in full.
 #[derive(Debug)]
 pub struct DTraceConnection<C: Connection> {
     inner: C,
@@ -217,6 +252,10 @@ where
     }
 }
 
+/// A [`TransactionManager`] for a [`DTraceConnection`].
+///
+/// This manager is responsible for the probes `transaction-start` and
+/// `transaction-done.
 pub struct DTraceTransactionManager<C> {
     _data: std::marker::PhantomData<C>,
 }
