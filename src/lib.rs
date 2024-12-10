@@ -1,5 +1,5 @@
 #![doc = include_str!("../README.md")]
-// Copyright 2023 Oxide Computer Company
+// Copyright 2024 Oxide Computer Company
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,8 +53,8 @@ pub mod probes {
     /// Fires when a transaction completes.
     ///
     /// This includes the connection ID as well as the depth of the transaction.
-    /// As transactions can be nested, _both_ of these are required to unique ID
-    /// a transaction in full.
+    /// As transactions can be nested, _both_ of these are required to uniquely
+    /// ID a transaction in full.
     ///
     /// The depth is `0` if there is no outstanding transaction, meaning this is
     /// not nested inside another transaction. Querying the transaction status
@@ -65,23 +65,9 @@ pub mod probes {
     pub fn transaction__done(conn_id: Uuid, depth: i64, committed: u8) {}
 }
 
-/// A [`Connection`] that includes DTrace probe points.
+/// A [`Connection`] wrapper that inserts DTrace probe points.
 ///
-/// This crate generates a provider named `diesel-db`. The following probe points are defined:
-///
-/// ```ignore
-/// connection-establish-start(_: &UniqueId, conn_id: Uuid, url: &str)
-/// connection-establish-done(_: &UniqueId, conn_id: Uuid, success: u8)
-/// query-start(_: &UniqueId, conn_id: Uuid, query: &str)
-/// query-done(_: &UniqueId, conn_id: Uuid)
-/// transaction-start(_: &UniqueId, conn_id: Uuid)
-/// transaction-done(_: &UniqueId, conn_id: Uuid)
-/// ```
-///
-/// The first argument is a [`UniqueId`], which enables correlating the start and done probes.
-/// `conn_id` is a unique identifier for the connection itself, which enables one to see which
-/// connections are executing each query. `query-start` also includes the actual SQL query string
-/// as its third argument.
+/// See the module-level documentation for more details.
 #[derive(Debug)]
 pub struct DTraceConnection<C: Connection> {
     inner: C,
@@ -187,12 +173,10 @@ where
         self.inner.transaction_state()
     }
 
-    /// We won't probe this method, and we'll just delegate to the inner connection.
     fn instrumentation(&mut self) -> &mut dyn diesel::connection::Instrumentation {
         self.inner.instrumentation()
     }
 
-    /// We won't probe this method, and we'll just delegate to the inner connection.
     fn set_instrumentation(&mut self, instrumentation: impl diesel::connection::Instrumentation) {
         self.inner.set_instrumentation(instrumentation)
     }
@@ -217,6 +201,11 @@ where
     }
 }
 
+/// A [`TransactionManager`] for a [`DTraceConnection`].
+///
+/// This manager is responsible for the probes `transaction-start` and
+/// `transaction-done`. See the module-level documentation for more details on
+/// these probes.
 pub struct DTraceTransactionManager<C> {
     _data: std::marker::PhantomData<C>,
 }
