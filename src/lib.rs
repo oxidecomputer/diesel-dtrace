@@ -74,6 +74,12 @@ pub struct DTraceConnection<C: Connection> {
     id: Uuid,
 }
 
+impl<C: Connection> DTraceConnection<C> {
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
+}
+
 impl<C: Connection> Deref for DTraceConnection<C> {
     type Target = C;
     fn deref(&self) -> &Self::Target {
