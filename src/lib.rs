@@ -74,6 +74,12 @@ pub struct DTraceConnection<C: Connection> {
     id: Uuid,
 }
 
+impl<C: Connection> DTraceConnection<C> {
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
+}
+
 impl<C: Connection> Deref for DTraceConnection<C> {
     type Target = C;
     fn deref(&self) -> &Self::Target {
@@ -265,15 +271,17 @@ where
     }
 
     fn rollback_transaction(conn: &mut DTraceConnection<C>) -> QueryResult<()> {
+        let result = AnsiTransactionManager::rollback_transaction(&mut conn.inner);
         let depth = Self::depth(conn);
         probes::transaction__done!(|| (&conn.id, depth, 0));
-        AnsiTransactionManager::rollback_transaction(&mut conn.inner)
+        result
     }
 
     fn commit_transaction(conn: &mut DTraceConnection<C>) -> QueryResult<()> {
+        let result = AnsiTransactionManager::commit_transaction(&mut conn.inner);
         let depth = Self::depth(conn);
         probes::transaction__done!(|| (&conn.id, depth, 1));
-        AnsiTransactionManager::commit_transaction(&mut conn.inner)
+        result
     }
 
     fn transaction_manager_status_mut(
