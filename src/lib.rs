@@ -272,14 +272,16 @@ where
 
     fn rollback_transaction(conn: &mut DTraceConnection<C>) -> QueryResult<()> {
         let depth = Self::depth(conn);
+        let result = AnsiTransactionManager::rollback_transaction(&mut conn.inner);
         probes::transaction__done!(|| (&conn.id, depth, 0));
-        AnsiTransactionManager::rollback_transaction(&mut conn.inner)
+        result
     }
 
     fn commit_transaction(conn: &mut DTraceConnection<C>) -> QueryResult<()> {
         let depth = Self::depth(conn);
+        let result = AnsiTransactionManager::commit_transaction(&mut conn.inner);
         probes::transaction__done!(|| (&conn.id, depth, 1));
-        AnsiTransactionManager::commit_transaction(&mut conn.inner)
+        result
     }
 
     fn transaction_manager_status_mut(
