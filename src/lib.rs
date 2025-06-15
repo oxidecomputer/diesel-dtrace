@@ -12,8 +12,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#![cfg_attr(usdt_need_asm, feature(asm))]
-#![cfg_attr(all(target_os = "macos", usdt_need_asm_sym), feature(asm_sym))]
 
 use diesel::backend::Backend;
 use diesel::connection::{
