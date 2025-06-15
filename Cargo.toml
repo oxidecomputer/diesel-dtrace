@@ -18,6 +18,3 @@ async-bb8-diesel = { git = "https://github.com/oxidecomputer/async-bb8-diesel" }
 bb8 = "0.8"
 diesel = { version = "2.2.10", features = [ "postgres", "r2d2", "i-implement-a-third-party-backend-and-opt-into-breaking-changes" ] }
 tokio = { version = "1", features = [ "macros", "rt-multi-thread" ] }
-
-[build-dependencies]
-version_check = "0.9"

@@ -119,11 +119,4 @@ query-start (4294967299)
 query-end (4294967299)
 ```
 
-## Notes
-
-This crate relies on the [`usdt`][2] crate. On macOS systems, a nightly
-compiler is required prior to Rust 1.67. On other systems a nightly compiler is
-required prior to Rust 1.59.
-
 [1]: https://docs.rs/diesel/latest/diesel/connection/trait.Connection.html
-[2]: https://crates.io/crates/usdt
