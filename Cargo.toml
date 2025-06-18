@@ -6,6 +6,7 @@ authors = ["Benjamin Naecker <ben@oxide.computer>"]
 license = "Apache-2.0"
 repository = "https://github.com/oxidecomputer/diesel-dtrace.git"
 description = "Add dtrace probes to Diesel connections"
+rust-version = "1.78"
 
 [dependencies]
 diesel = { version = "2.2.10", features = [ "r2d2", "i-implement-a-third-party-backend-and-opt-into-breaking-changes" ] }
