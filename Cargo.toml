@@ -10,7 +10,7 @@ description = "Add dtrace probes to Diesel connections"
 [dependencies]
 diesel = { version = "2.2.12", features = [ "r2d2", "i-implement-a-third-party-backend-and-opt-into-breaking-changes" ] }
 serde = "1"
-usdt = "0.5"
+usdt = "0.6"
 uuid = { version = ">=0.8.0, <2.0.0", features = [ "v4", "serde" ] }
 
 [dev-dependencies]
