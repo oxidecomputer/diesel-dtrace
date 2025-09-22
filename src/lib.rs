@@ -186,6 +186,10 @@ where
     fn set_instrumentation(&mut self, instrumentation: impl diesel::connection::Instrumentation) {
         self.inner.set_instrumentation(instrumentation)
     }
+
+    fn set_prepared_statement_cache_size(&mut self, size: diesel::connection::CacheSize) {
+        self.inner.set_prepared_statement_cache_size(size);
+    }
 }
 
 impl<C> diesel::connection::ConnectionSealed for DTraceConnection<C>
