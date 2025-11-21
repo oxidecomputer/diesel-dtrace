@@ -13,7 +13,7 @@ jobs:
   check-style:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Report cargo version
       run: cargo --version
     - name: Report rustfmt version
@@ -36,7 +36,7 @@ jobs:
         PKG_CONFIG_PATH: "/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH"
         PATH: "/opt/homebrew/bin:$PATH"
       run: brew install postgresql
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - uses: dtolnay/rust-toolchain@stable
     - name: Build
       run: cargo build --tests --verbose
@@ -58,7 +58,7 @@ jobs:
         PKG_CONFIG_PATH: "/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH"
         PATH: "/opt/homebrew/bin:$PATH"
       run: brew install postgresql
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - uses: dtolnay/rust-toolchain@nightly
     - name: Build
       run: cargo build --tests --verbose
