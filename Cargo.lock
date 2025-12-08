@@ -5,21 +5,21 @@ version = 4
 [[package]]
 name = "async-bb8-diesel"
 version = "0.2.1"
-source = "git+https://github.com/oxidecomputer/async-bb8-diesel#93900532120ad4754bc3146dd36183d6944cdf97"
+source = "git+https://github.com/oxidecomputer/async-bb8-diesel#1403df2f2ed65ada99b7da599cfb946512af5e60"
 dependencies = [
  "async-trait",
  "bb8",
  "diesel",
  "futures",
- "thiserror 1.0.61",
+ "thiserror",
  "tokio",
 ]
 
 [[package]]
 name = "async-trait"
-version = "0.1.81"
+version = "0.1.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e0c28dcc82d7c8ead5cb13beb15405b57b8546e93215673ff8ca0349a028107"
+checksum = "9035ad2d096bed7955a320ee7e2230574d28fd3c3a0f186cbea1ff3c7eed5dbb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -202,7 +202,7 @@ dependencies = [
  "pretty-hex",
  "serde",
  "serde_json",
- "thiserror 2.0.16",
+ "thiserror",
  "zerocopy",
 ]
 
@@ -234,7 +234,7 @@ checksum = "dc09b90bda5770641457f1c0a42c8203c48f5a3d9799dcf1bafbd84e30ccf080"
 dependencies = [
  "pest",
  "pest_derive",
- "thiserror 2.0.16",
+ "thiserror",
 ]
 
 [[package]]
@@ -472,7 +472,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1db05f56d34358a8b1066f67cbb203ee3e7ed2ba674a6263a1d5ec6db2204323"
 dependencies = [
  "memchr",
- "thiserror 2.0.16",
+ "thiserror",
  "ucd-trie",
 ]
 
@@ -725,31 +725,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.61"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c546c80d6be4bc6a00c0f01730c08df82eaa7a7a61f11d656526506112cc1709"
-dependencies = [
- "thiserror-impl 1.0.61",
-]
-
-[[package]]
-name = "thiserror"
 version = "2.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3467d614147380f2e4e374161426ff399c91084acd2363eaf549172b3d5e60c0"
 dependencies = [
- "thiserror-impl 2.0.16",
-]
-
-[[package]]
-name = "thiserror-impl"
-version = "1.0.61"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46c3384250002a6d5af4d114f2845d37b57521033f30d5c3f46c4d70e1197533"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
+ "thiserror-impl",
 ]
 
 [[package]]
@@ -857,7 +837,7 @@ dependencies = [
  "serde",
  "serde_json",
  "syn",
- "thiserror 2.0.16",
+ "thiserror",
  "thread-id",
 ]
 
