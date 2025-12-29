@@ -15,7 +15,7 @@ uuid = { version = ">=0.8.0, <2.0.0", features = [ "v4", "serde" ] }
 
 [dev-dependencies]
 async-bb8-diesel = { git = "https://github.com/oxidecomputer/async-bb8-diesel" }
-bb8 = "0.8"
+bb8 = "0.9"
 diesel = { version = "2.3.5", features = [ "postgres", "r2d2", "i-implement-a-third-party-backend-and-opt-into-breaking-changes" ] }
 tokio = { version = "1", features = [ "macros", "rt-multi-thread" ] }
 
