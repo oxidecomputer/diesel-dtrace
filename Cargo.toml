@@ -6,6 +6,7 @@ authors = ["Benjamin Naecker <ben@oxide.computer>"]
 license = "Apache-2.0"
 repository = "https://github.com/oxidecomputer/diesel-dtrace.git"
 description = "Add dtrace probes to Diesel connections"
+rust-version = "1.78"
 
 [dependencies]
 diesel = { version = "2.3.5", features = [ "r2d2", "i-implement-a-third-party-backend-and-opt-into-breaking-changes" ] }
@@ -18,6 +19,3 @@ async-bb8-diesel = { git = "https://github.com/oxidecomputer/async-bb8-diesel" }
 bb8 = "0.8"
 diesel = { version = "2.3.5", features = [ "postgres", "r2d2", "i-implement-a-third-party-backend-and-opt-into-breaking-changes" ] }
 tokio = { version = "1", features = [ "macros", "rt-multi-thread" ] }
-
-[build-dependencies]
-version_check = "0.9"
