@@ -10,11 +10,11 @@ checksum = "5f0e0fee31ef5ed1ba1316088939cea399010ed7731dba877ed44aeb407a75ea"
 
 [[package]]
 name = "async-bb8-diesel"
-version = "0.2.1"
-source = "git+https://github.com/oxidecomputer/async-bb8-diesel#1403df2f2ed65ada99b7da599cfb946512af5e60"
+version = "0.3.0"
+source = "git+https://github.com/oxidecomputer/async-bb8-diesel#f049570ff89080b2385c637af4c0e614b0a124a4"
 dependencies = [
  "async-trait",
- "bb8",
+ "bb8 0.9.1",
  "diesel",
  "futures",
  "thiserror",
@@ -47,6 +47,18 @@ dependencies = [
  "async-trait",
  "futures-util",
  "parking_lot",
+ "tokio",
+]
+
+[[package]]
+name = "bb8"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "457d7ed3f888dfd2c7af56d4975cade43c622f74bdcddfed6d4352f57acc6310"
+dependencies = [
+ "futures-util",
+ "parking_lot",
+ "portable-atomic",
  "tokio",
 ]
 
@@ -157,7 +169,7 @@ name = "diesel-dtrace"
 version = "0.4.2"
 dependencies = [
  "async-bb8-diesel",
- "bb8",
+ "bb8 0.8.6",
  "diesel",
  "serde",
  "tokio",
@@ -584,6 +596,12 @@ name = "plain"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
+
+[[package]]
+name = "portable-atomic"
+version = "1.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c33a9471896f1c69cecef8d20cbe2f7accd12527ce60845ff44c153bb2a21b49"
 
 [[package]]
 name = "pq-sys"
