@@ -14,7 +14,7 @@ version = "0.3.0"
 source = "git+https://github.com/oxidecomputer/async-bb8-diesel#f049570ff89080b2385c637af4c0e614b0a124a4"
 dependencies = [
  "async-trait",
- "bb8 0.9.1",
+ "bb8",
  "diesel",
  "futures",
  "thiserror",
@@ -37,18 +37,6 @@ name = "autocfg"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c4b4d0bd25bd0b74681c0ad21497610ce1b7c91b1022cd21c80c6fbdd9476b0"
-
-[[package]]
-name = "bb8"
-version = "0.8.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d89aabfae550a5c44b43ab941844ffcd2e993cb6900b342debf59e9ea74acdb8"
-dependencies = [
- "async-trait",
- "futures-util",
- "parking_lot",
- "tokio",
-]
 
 [[package]]
 name = "bb8"
@@ -169,7 +157,7 @@ name = "diesel-dtrace"
 version = "0.4.2"
 dependencies = [
  "async-bb8-diesel",
- "bb8 0.8.6",
+ "bb8",
  "diesel",
  "serde",
  "tokio",
