@@ -163,7 +163,6 @@ dependencies = [
  "tokio",
  "usdt",
  "uuid",
- "version_check",
 ]
 
 [[package]]
