@@ -30,16 +30,14 @@ jobs:
     steps:
     - name: install-pq-mac
       if: ${{ matrix.os == 'macos-latest' }}
-      run: brew install libpq
+      run: |
+        brew install libpq
+        echo "PQ_LIB_DIR=/opt/homebrew/opt/libpq/lib" >> "$GITHUB_ENV"
     - uses: actions/checkout@v6
     - uses: dtolnay/rust-toolchain@stable
     - name: Build
-      env:
-        PQ_LIB_DIR: /opt/homebrew/opt/libpq/lib
       run: cargo build --tests --verbose
     - name: Run tests
-      env:
-        PQ_LIB_DIR: /opt/homebrew/opt/libpq/lib
       run: cargo test --verbose
 
   nightly-test:
@@ -51,14 +49,12 @@ jobs:
     steps:
     - name: install-pq-mac
       if: ${{ matrix.os == 'macos-latest' }}
-      run: brew install libpq
+      run: |
+        brew install libpq
+        echo "PQ_LIB_DIR=/opt/homebrew/opt/libpq/lib" >> "$GITHUB_ENV"
     - uses: actions/checkout@v6
     - uses: dtolnay/rust-toolchain@nightly
     - name: Build
-      env:
-        PQ_LIB_DIR: /opt/homebrew/opt/libpq/lib
       run: cargo build --tests --verbose
     - name: Run tests
-      env:
-        PQ_LIB_DIR: /opt/homebrew/opt/libpq/lib
       run: cargo test --verbose
